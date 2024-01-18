@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TinyMsg</title>
+    <style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* set the body's height to the full viewport height */
+}
+
+h1 {
+    width: 100%;
+    background-color: #f8f9fa;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+    flex-shrink: 0;  /* prevent the header from shrinking */
+}
+
+#messages {
+    width: 80vw;
+    margin: 0 auto;
+    padding: 20px;
+    flex-grow: 1;  /* make the content grow to take up available space */
+    overflow-y: auto;  /* add a scrollbar when the content exceeds the height */
+}
+
+.timestamp {
+    font-weight: bold;
+    color: #666;
+}
+
+.content {
+    color: #333;
+}
+
+p {
+    background-color: #fff;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+footer {
+    width: 100%;
+    background-color: #f8f9fa;
+    text-align: left;
+    flex-shrink: 0;  /* prevent the footer from shrinking */
+}
+    </style>
+</head>
+<body>
+    <h1>TinyMsg</h1>
+    <div id="messages">
+
+    </div>
+    <footer>
+        <p>DamnDam with Copilot</p>
+    </footer>
+    <script>
+var eventSource = new EventSource("/stream");
+eventSource.onmessage = function(event) {
+    console.log(event.data);  // print the message data to the console
+    var data = JSON.parse(event.data);
+    var timestamp = new Date(data.timestamp * 1000).toLocaleString();
+    var message = data.content;
+
+    var messageElement = document.createElement("p");
+
+    var timestampElement = document.createElement("span");
+    timestampElement.textContent = timestamp;
+    timestampElement.className = "timestamp";  // apply the timestamp class
+
+    var contentElement = document.createElement("span");
+    contentElement.textContent = ": " + message;
+    contentElement.className = "content";  // apply the content class
+
+    messageElement.appendChild(timestampElement);
+    messageElement.appendChild(contentElement);
+
+    document.getElementById("messages").appendChild(messageElement);
+};
+    </script>
+</body>
+</html>
