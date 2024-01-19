@@ -37,8 +37,8 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-def create_listener():
-    listener = Listener(id=str(uuid.uuid4()), last_seen=datetime.utcnow(), last_message_id=None)
+def create_listener(last_message_id=None):
+    listener = Listener(id=str(uuid.uuid4()), last_seen=datetime.utcnow(), last_message_id=last_message_id)
     db.session.add(listener)
     db.session.commit()
     return listener
@@ -74,8 +74,20 @@ def post_message():
 # GET / - view the messages
 @app.route('/', methods=['GET'])
 def view_messages():
-    listener = create_listener()
-    return render_template('messages.html', listener_id=listener.id)
+    messages = Message.query.order_by(Message.id.asc()).all()
+    if not messages:
+        listener = create_listener()
+    else:
+        listener = create_listener(last_message_id=messages[-1].id)
+    # convert the messages to a list of dictionaries
+    messages = [
+        {
+            'timestamp': int(message.timestamp.replace(tzinfo=timezone.utc).timestamp()), 
+            'content': message.content
+        } 
+        for message in messages
+    ]
+    return render_template('messages.html', listener_id=listener.id, messages=messages)
 
 # GET /stream - stream the messages
 @app.route('/stream')
@@ -110,7 +122,3 @@ def stream():
                 time.sleep(1)
 
     return Response(generate(listener_id), mimetype="text/event-stream")
-
-if __name__ == '__main__':
-    # Run the app server and listen on every interface on port 5000
-    app.run(debug=True)

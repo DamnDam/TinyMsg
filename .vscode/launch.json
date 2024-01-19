@@ -10,7 +10,7 @@
             "request": "launch",
             "module": "flask",
             "env": {
-                "FLASK_APP": "tinymsg",
+                "FLASK_APP": "tinymsg.tinymsg:app",
                 "FLASK_DEBUG": "1"
             },
             "args": [
@@ -19,6 +19,13 @@
                 "--no-reload"
             ],
             "jinja": true,
+            "justMyCode": true
+        },
+        { 
+            "name": "Python GUI",
+            "type": "python",
+            "request": "launch",
+            "module": "tinymsg.gui",
             "justMyCode": true
         }
     ]

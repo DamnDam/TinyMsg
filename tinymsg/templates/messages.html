@@ -66,10 +66,11 @@ footer {
     </footer>
     <script>
 var listener_id = "{{ listener_id }}";
-sessionStorage.setItem("listener_id", listener_id);
 var eventSource = new EventSource("/stream?listener_id=" + listener_id);
-eventSource.onmessage = function(event) {
-    var data = JSON.parse(event.data);
+
+// function to parse one JSON message
+function parseMessage(msg) {
+    var data = JSON.parse(msg);
     var timestamp = new Date(data.timestamp * 1000).toLocaleString();
     var message = data.content;
 
@@ -88,6 +89,11 @@ eventSource.onmessage = function(event) {
 
     var messages = document.getElementById("messages");
     messages.insertBefore(messageElement, messages.firstChild);
+}
+
+// parse all messages received from the server
+eventSource.onmessage = function(event) {
+    parseMessage(event.data);
 };
     </script>
 </body>
