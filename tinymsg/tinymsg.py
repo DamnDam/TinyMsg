@@ -92,9 +92,9 @@ def stream():
         
             while True:
                 if listener.last_message_id is None:
-                    messages = Message.query.order_by(Message.timestamp.asc()).all()
+                    messages = Message.query.order_by(Message.id.asc()).all()
                 else:
-                    messages = Message.query.filter(Message.id > listener.last_message_id).order_by(Message.timestamp.asc()).all()
+                    messages = Message.query.filter(Message.id > listener.last_message_id).order_by(Message.id.asc()).all()
                 
                 for message in messages:
                     data = {
