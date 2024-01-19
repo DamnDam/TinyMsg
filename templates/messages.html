@@ -31,7 +31,7 @@ h1 {
 }
 
 .timestamp {
-    font-weight: bold;
+    font-weight: lighter;
     color: #666;
 }
 
@@ -64,9 +64,10 @@ footer {
         <p>DamnDam with Copilot</p>
     </footer>
     <script>
-var eventSource = new EventSource("/stream");
+var listener_id = "{{ listener_id }}";
+sessionStorage.setItem("listener_id", listener_id);
+var eventSource = new EventSource("/stream?listener_id=" + listener_id);
 eventSource.onmessage = function(event) {
-    console.log(event.data);  // print the message data to the console
     var data = JSON.parse(event.data);
     var timestamp = new Date(data.timestamp * 1000).toLocaleString();
     var message = data.content;

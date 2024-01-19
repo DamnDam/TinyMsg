@@ -1,59 +1,115 @@
+import threading
+import secrets
+import uuid
 import time
 import json
-import pytz
-
-from datetime import datetime
-
-from flask import Flask, request, render_template, Response
+from datetime import datetime, timezone, timedelta
+from flask import Flask, request, session, render_template, Response
 from flask_sqlalchemy import SQLAlchemy
+
+# Clean database configuration
+CLEANING_FREQUENCY = 60
+MAX_MESSAGES = 100
+MAX_LISTENER_AGE = 300
+
+# create the database model
 db = SQLAlchemy()
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(128))
-    timestamp = db.Column(db.DateTime, default=datetime.now(pytz.utc))
+    timestamp = db.Column(db.DateTime)
 
+class Listener(db.Model):
+    id = db.Column(db.String(36), primary_key=True, unique=True)
+    last_seen = db.Column(db.DateTime)
+    last_message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=True)
+
+# initialize the flask application
 app = Flask(__name__)
+app.secret_key = secrets.token_hex(16)
+
+# configure the database (sqlite in RAM)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'    
 db.init_app(app)
 
+# create the database tables
+with app.app_context():
+    db.create_all()
+
+def create_listener():
+    listener = Listener(id=str(uuid.uuid4()), last_seen=datetime.utcnow(), last_message_id=None)
+    db.session.add(listener)
+    db.session.commit()
+    return listener
+
+# Database cleaning
+last_cleaning_time = time.time()
+
+def clean_messages():
+    global last_cleaning_time
+    with app.app_context():
+        # get the ids of the last X messages
+        last_messages_ids = db.session.query(Message.id).order_by(Message.timestamp.desc()).limit(MAX_MESSAGES).all()
+        # delete all messages that are not in the last
+        db.session.query(Message).filter(~Message.id.in_(last_messages_ids)).delete(synchronize_session=False)
+
+        # delete all listeners that have not been seen for X seconds
+        Listener.query.filter(Listener.last_seen < datetime.utcnow() - timedelta(seconds=MAX_LISTENER_AGE)).delete()
+        db.session.commit()
+        last_cleaning_time = time.time()
+
+# POST / - post a new message
 @app.route('/', methods=['POST'])
 def post_message():
     content = request.data.decode('utf-8')
-    message = Message(content=content)
+    message = Message(content=content, timestamp=datetime.utcnow())
     db.session.add(message)
     db.session.commit()
-    return 'Message posted successfully', 200
+    if time.time() - last_cleaning_time > CLEANING_FREQUENCY:
+        threading.Thread(target=clean_messages).start()
+    return 'Message posted successfully', 201
 
-def event_stream():
-    with app.app_context():
-        while True:
-            new_message = Message.query.order_by(Message.id.desc()).first()
-            if new_message is not None:
-                unix_timestamp = int(new_message.timestamp.timestamp())
-                print(new_message.timestamp)
-                print(unix_timestamp)
-                data = {
-                    "timestamp": unix_timestamp,
-                    "content": new_message.content
-                }
-                yield f"data: {json.dumps(data)}\n\n"
-                db.session.delete(new_message)
-                db.session.commit()
-            else:
-                time.sleep(.1)  # wait for 1 second before checking for new messages again
-
-@app.route('/stream')
-def stream():
-    # returns a stream of messages to the client
-    return Response(event_stream(), mimetype="text/event-stream")
-
-
+# GET / - view the messages
 @app.route('/', methods=['GET'])
 def view_messages():
-    return render_template('messages.html')
+    listener = create_listener()
+    return render_template('messages.html', listener_id=listener.id)
+
+# GET /stream - stream the messages
+@app.route('/stream')
+def stream():
+    # get the listener id from the query string
+    listener_id = request.args.get('listener_id', None)
+    if not listener_id:
+        return Response(status=400)
+    def generate(listener_id):
+        with app.app_context():
+            listener = Listener.query.get(listener_id)
+            if not listener:
+                listener = create_listener()
+        
+            while True:
+                if listener.last_message_id is None:
+                    messages = Message.query.order_by(Message.timestamp.desc()).all()
+                else:
+                    messages = Message.query.filter(Message.id > listener.last_message_id).order_by(Message.timestamp.desc()).all()
+                
+                for message in messages:
+                    data = {
+                        "timestamp": int(message.timestamp.replace(tzinfo=timezone.utc).timestamp()),
+                        "content": message.content
+                    }
+                    yield f"data: {json.dumps(data)}\n\n"
+                else:
+                    if messages:
+                        listener.last_seen = datetime.utcnow()
+                        listener.last_message_id = messages[0].id
+                        db.session.commit()
+                    time.sleep(1)
+
+    return Response(generate(listener_id), mimetype="text/event-stream")
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
+    # Run the app server and listen on every interface on port 5000
+    app.run(host='0.0.0.0', port=5000, debug=True)
