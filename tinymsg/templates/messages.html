@@ -90,6 +90,14 @@ function parseMessage(msg) {
     var messages = document.getElementById("messages");
     messages.insertBefore(messageElement, messages.firstChild);
 }
+// Messages initially received from the server
+var initialMessages = [
+    {% for message in messages %}
+        '{{ message | tojson }}',
+    {% endfor %}
+];
+// on page load, parse all initial messages
+initialMessages.forEach(parseMessage);
 
 // parse all messages received from the server
 eventSource.onmessage = function(event) {

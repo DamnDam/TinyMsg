@@ -78,6 +78,7 @@ def send_message():
     read_queue()
 
 root = tk.Tk()
+root.withdraw()
 root.title("TinyMsg")
 root.iconbitmap('icon.ico')
 
@@ -120,6 +121,7 @@ root.grid_columnconfigure(0, weight=1)
 root.grid_columnconfigure(1, weight=1)
 
 def main():
+    root.deiconify()
     root.mainloop()
 
 if __name__ == '__main__':
