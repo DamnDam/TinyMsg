@@ -46,13 +46,14 @@ def create_listener():
 # Database cleaning
 last_cleaning_time = time.time()
 
-def clean_messages():
+def clean_db():
     global last_cleaning_time
     with app.app_context():
         # get the ids of the last X messages
-        last_messages_ids = db.session.query(Message.id).order_by(Message.timestamp.desc()).limit(MAX_MESSAGES).all()
+        ids_to_keep = db.session.query(Message.id).order_by(Message.timestamp.desc()).limit(MAX_MESSAGES).all()
+        ids_to_keep = [id[0] for id in ids_to_keep]
         # delete all messages that are not in the last
-        db.session.query(Message).filter(~Message.id.in_(last_messages_ids)).delete(synchronize_session=False)
+        db.session.query(Message).filter(~Message.id.in_(ids_to_keep)).delete(synchronize_session=False)
 
         # delete all listeners that have not been seen for X seconds
         Listener.query.filter(Listener.last_seen < datetime.utcnow() - timedelta(seconds=MAX_LISTENER_AGE)).delete()
@@ -67,7 +68,7 @@ def post_message():
     db.session.add(message)
     db.session.commit()
     if time.time() - last_cleaning_time > CLEANING_FREQUENCY:
-        threading.Thread(target=clean_messages).start()
+        threading.Thread(target=clean_db).start()
     return 'Message posted successfully', 201
 
 # GET / - view the messages
@@ -85,15 +86,15 @@ def stream():
         return Response(status=400)
     def generate(listener_id):
         with app.app_context():
-            listener = Listener.query.get(listener_id)
+            listener = db.session.get(Listener, listener_id)
             if not listener:
                 listener = create_listener()
         
             while True:
                 if listener.last_message_id is None:
-                    messages = Message.query.order_by(Message.timestamp.desc()).all()
+                    messages = Message.query.order_by(Message.timestamp.asc()).all()
                 else:
-                    messages = Message.query.filter(Message.id > listener.last_message_id).order_by(Message.timestamp.desc()).all()
+                    messages = Message.query.filter(Message.id > listener.last_message_id).order_by(Message.timestamp.asc()).all()
                 
                 for message in messages:
                     data = {
@@ -101,12 +102,12 @@ def stream():
                         "content": message.content
                     }
                     yield f"data: {json.dumps(data)}\n\n"
-                else:
-                    if messages:
-                        listener.last_seen = datetime.utcnow()
-                        listener.last_message_id = messages[0].id
-                        db.session.commit()
-                    time.sleep(1)
+
+                if messages:
+                    listener.last_seen = datetime.utcnow()
+                    listener.last_message_id = messages[0].id
+                    db.session.commit()
+                time.sleep(1)
 
     return Response(generate(listener_id), mimetype="text/event-stream")
 

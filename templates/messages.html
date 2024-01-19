@@ -36,6 +36,7 @@ h1 {
 }
 
 .content {
+    padding-left: 10px;
     color: #333;
 }
 
@@ -79,13 +80,14 @@ eventSource.onmessage = function(event) {
     timestampElement.className = "timestamp";  // apply the timestamp class
 
     var contentElement = document.createElement("span");
-    contentElement.textContent = ": " + message;
+    contentElement.textContent = message;
     contentElement.className = "content";  // apply the content class
 
     messageElement.appendChild(timestampElement);
     messageElement.appendChild(contentElement);
 
-    document.getElementById("messages").appendChild(messageElement);
+    var messages = document.getElementById("messages");
+    messages.insertBefore(messageElement, messages.firstChild);
 };
     </script>
 </body>
