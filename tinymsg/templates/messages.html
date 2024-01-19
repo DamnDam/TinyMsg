@@ -65,8 +65,8 @@ footer {
         <p>DamnDam with Copilot</p>
     </footer>
     <script>
-var listener_id = "{{ listener_id }}";
-var eventSource = new EventSource("/stream?listener_id=" + listener_id);
+
+var eventSource = new EventSource("/stream?start_id={{ last_message_id }}");
 
 // function to parse one JSON message
 function parseMessage(msg) {
