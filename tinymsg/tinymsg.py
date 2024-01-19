@@ -1,5 +1,4 @@
 import threading
-import secrets
 import uuid
 import time
 import json
@@ -27,7 +26,6 @@ class Listener(db.Model):
 
 # initialize the flask application
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
 
 # configure the database (sqlite in RAM)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'    
