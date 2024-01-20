@@ -37,6 +37,7 @@ def create_app():
     with app.app_context():
         # create the database tables
         db.create_all()
+        # app level variable
         current_app.last_cleaning_time = time.time()
 
     # Database cleaning thread
@@ -45,9 +46,9 @@ def create_app():
             # get the ids of the last X messages
             ids_to_keep = db.session.query(Message.id).order_by(Message.timestamp.desc()).limit(MAX_MESSAGES).all()
             ids_to_keep = [id[0] for id in ids_to_keep]
-            # delete all messages that are not in the last
-            db.session.query(Message).filter(~Message.id.in_(ids_to_keep)).delete(synchronize_session=False)
-            
+            # delete all messages that are not in the selected ids
+            # (synchronize_session=False to gain performance)
+            db.session.commit()
             current_app.last_cleaning_time = time.time()
 
     # POST / - post a new message
@@ -81,6 +82,10 @@ def create_app():
     def stream():
         # get the last message id from the query string
         start_id = request.args.get('start_id')
+
+        # generator function to stream the messages
+        # generators are special functions that loop 
+        # and yield values one by one to the caller
         def generate(start_id):
             with app.app_context():       
                 while True: # infinite loop to keep the connection alive
