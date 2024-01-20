@@ -10,7 +10,7 @@
             "request": "launch",
             "module": "flask",
             "env": {
-                "FLASK_APP": "tinymsg.tinymsg:app",
+                "FLASK_APP": "tinymsg.tinymsg:create_app",
                 "FLASK_DEBUG": "1"
             },
             "args": [

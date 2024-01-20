@@ -93,7 +93,7 @@ function parseMessage(msg) {
 // Messages initially received from the server
 var initialMessages = [
     {% for message in messages %}
-        '{{ message | tojson }}',
+        '{{ message | safe }}',
     {% endfor %}
 ];
 // on page load, parse all initial messages
