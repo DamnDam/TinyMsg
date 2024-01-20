@@ -128,43 +128,44 @@ def main():
     # Widgets are organized in a grid
 
     host_label = tk.Label(root, text="Host:")
-    host_label.grid(row=0, column=0)
+    host_label.grid(row=1, column=0,)
     host_entry = tk.Entry(root)
     host_entry.insert(0, "localhost")  # Default host value
-    host_entry.grid(row=0, column=1)
+    host_entry.grid(row=1, column=1)
 
     port_label = tk.Label(root, text="Port:")
-    port_label.grid(row=1, column=0)
+    port_label.grid(row=2, column=0)
     port_entry = tk.Entry(root)
     port_entry.insert(0, "5000")  # Default port value
-    port_entry.grid(row=1, column=1)
+    port_entry.grid(row=2, column=1)
 
     start_button = tk.Button(root, text="Start Server", command=start_server)
     stop_button = tk.Button(root, text="Stop Server", command=stop_server)
 
-    start_button.grid(row=0, column=2, rowspan=2)
+    start_button.grid(row=1, column=2, rowspan=2)
 
     # Output text widget and scrollbar
     output_text = tk.Text(root)
     scrollbar = tk.Scrollbar(root)
-    output_text.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=10, padx=5)
-    scrollbar.grid(row=2, column=3, sticky="ns", pady=10)
+    output_text.grid(row=3, column=0, columnspan=3, sticky="nsew", pady=10, padx=5)
+    scrollbar.grid(row=3, column=3, sticky="ns", pady=10)
 
     output_text.config(yscrollcommand=scrollbar.set)
     scrollbar.config(command=output_text.yview)
 
     message_label = tk.Label(root, text="Message:")
-    message_label.grid(row=3, column=0)
+    message_label.grid(row=4, column=0)
     message_entry = tk.Entry(root)
-    message_entry.grid(row=3, column=1, columnspan=2, sticky="ew")
+    message_entry.grid(row=4, column=1, columnspan=2, sticky="ew")
     message_entry.bind("<Return>", send_message)
 
     send_button = tk.Button(root, text="Send Message", command=send_message)
-    send_button.grid(row=4, column=1, columnspan=2, sticky="ew")
+    send_button.grid(row=5, column=1, columnspan=2, sticky="ew")
 
     # Configure grid
-    root.grid_rowconfigure(2, weight=1)  # Row with output text will expand
-    root.grid_rowconfigure(5, minsize=10)  # Empty row bottom of window
+    root.grid_rowconfigure(3, weight=1)  # Row with output text will expand
+    root.grid_rowconfigure(0, minsize=10)  # Empty row top of window
+    root.grid_rowconfigure(6, minsize=10)  # Empty row bottom of window
     root.grid_columnconfigure(2, weight=1)  # Column with output text will expand
 
     # Run the GUI

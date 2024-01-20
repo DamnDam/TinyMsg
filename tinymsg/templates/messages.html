@@ -48,6 +48,15 @@ p {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+#messages p {
+  animation: fade-in 0.5s;
+}
+
 footer {
     width: 100%;
     background-color: #f8f9fa;
@@ -81,7 +90,7 @@ function parseMessage(msg) {
     timestampElement.className = "timestamp";  // apply the timestamp class
 
     var contentElement = document.createElement("span");
-    contentElement.textContent = message;
+    contentElement.innerHTML = message;
     contentElement.className = "content";  // apply the content class
 
     messageElement.appendChild(timestampElement);
@@ -91,11 +100,7 @@ function parseMessage(msg) {
     messages.insertBefore(messageElement, messages.firstChild);
 }
 // Messages initially received from the server
-var initialMessages = [
-    {% for message in messages %}
-        '{{ message | safe }}',
-    {% endfor %}
-];
+var initialMessages = [{% for message in messages %}'{{ message | safe }}',{% endfor %}];
 // on page load, parse all initial messages
 initialMessages.forEach(parseMessage);
 
