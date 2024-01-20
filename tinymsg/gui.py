@@ -1,4 +1,5 @@
 import tkinter as tk
+import pkg_resources
 from multiprocessing import Process, Queue
 import sys
 
@@ -87,7 +88,8 @@ def draw():
 
     root = tk.Tk()
     root.title("TinyMsg")
-    root.iconbitmap('icon.ico')
+    root.iconbitmap(pkg_resources.resource_filename('tinymsg', 'icon.ico'))
+    # root.iconbitmap('tinymsg/icon.ico')
 
     host_label = tk.Label(root, text="Host:")
     host_label.grid(row=0, column=0)
