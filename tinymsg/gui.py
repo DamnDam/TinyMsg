@@ -5,8 +5,8 @@ import sys
 
 # We use tkinter to create a GUI for our application.
 
-# The GUI runs in a parent and starts child processes
-# for the actual application logic.
+# The GUI runs in a parent process and starts 
+# child processes for the actual application logic.
 
 
 # Server subprocess
@@ -45,7 +45,7 @@ def start_server(event=None):
     server_process = Process(target=serve, args=(host, port, queue))
     server_process.start()
     start_button.grid_forget()
-    stop_button.grid(row=0, column=2, rowspan=2)
+    stop_button.grid(row=1, column=2, rowspan=2)
     output_queue(queue, server_process)
 
 
@@ -54,9 +54,8 @@ def stop_server(event=None):
     global server_process
     server_process.terminate()
     stop_button.grid_forget()
-    start_button.grid(row=0, column=2, rowspan=2)
-    output_text.insert(tk.END, "Server stopped\n")
-    output_text.see(tk.END)
+    start_button.grid(row=1, column=2, rowspan=2)
+    add_text("Server stopped.\n")
 
 
 # Send message button GUI event
@@ -64,7 +63,7 @@ def send_message(event=None):
     message = message_entry.get()
     host = host_entry.get()
     port = port_entry.get()
-    output_text.insert(tk.END, f"Sending message: {message}\n")
+    add_text(f"Sending message: {message}\n")
     queue = Queue()
     req_process = Process(target=post, args=(message, host, port, queue))
     req_process.start()
@@ -78,6 +77,12 @@ def on_closing():
         server_process.terminate()
     root.destroy()
 
+# Add text to output text widget
+def add_text(text):
+    output_text.config(state=tk.NORMAL)
+    output_text.insert(tk.END, text)
+    output_text.see(tk.END)
+    output_text.config(state=tk.DISABLED)
 
 # Redirect stdout and stderr from Process to a queue
 def redirect_output(queue):
@@ -103,16 +108,14 @@ def output_queue(queue, process):
     try:
         while True:
             message = queue.get_nowait()
-            output_text.insert(tk.END, message)
-            output_text.see(tk.END)
+            add_text(message)
     except QueueModule.Empty:
         if process.is_alive():
             root.after(100, lambda: output_queue(queue, process))
         else:
             while not queue.empty():
                 message = queue.get()
-                output_text.insert(tk.END, message)
-                output_text.see(tk.END)
+                add_text(message)
 
 
 # Draw and run the GUI
@@ -150,7 +153,7 @@ def main():
     output_text.grid(row=3, column=0, columnspan=3, sticky="nsew", pady=10, padx=5)
     scrollbar.grid(row=3, column=3, sticky="ns", pady=10)
 
-    output_text.config(yscrollcommand=scrollbar.set)
+    output_text.config(yscrollcommand=scrollbar.set, state=tk.DISABLED)
     scrollbar.config(command=output_text.yview)
 
     message_label = tk.Label(root, text="Message:")
